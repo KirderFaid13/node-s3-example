@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, ListObjectsCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3'
 import { AWS_BUCKET_NAME, AWS_BUCKET_REGION, AWS_PUBLIC_KEY, AWS_SECRET_KEY } from './config.js'
 import fs from 'fs'
 import {getSignedUrl} from '@aws-sdk/s3-request-presigner'
@@ -11,11 +11,11 @@ const client = new S3Client({
     }
 })
 
-export async function uploadFile(file) {
+export async function uploadFile(file, folderPath = '') {
     const stream = fs.createReadStream(file.tempFilePath)
     const uploadParams = {
         Bucket: AWS_BUCKET_NAME,
-        Key: file.name,
+        Key: `${folderPath}/${file.name}`,
         Body: stream
     }
 
@@ -25,10 +25,15 @@ export async function uploadFile(file) {
 
 }
 
-export async function getFiles() {
-    const command = new ListObjectsCommand({
-        Bucket: AWS_BUCKET_NAME
-    })
+export async function getFiles(continuationToken = null, maxKeys = 10) {
+    const commandParams = {
+        Bucket: AWS_BUCKET_NAME,
+        MaxKeys: maxKeys
+    }
+    if (continuationToken) {
+        commandParams.ContinuationToken = continuationToken
+    }
+    const command = new ListObjectsV2Command(commandParams)
     return await client.send(command)
 
 }
@@ -56,5 +61,5 @@ export async function getFileURL(filename) {
         Bucket: AWS_BUCKET_NAME,
         Key: filename
     })
-    return await getSignedUrl(client, command, { expiresIn: 3600})
+    return await getSignedUrl(client, command);
 }

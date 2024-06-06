@@ -10,8 +10,11 @@ app.use(fileUpload({
 }))
 
 app.get('/files', async (req, res) => {
-    const result = await getFiles()
-    res.json(result.Contents)
+    console.log('Request received for /files')
+    const { continuationToken, maxKeys } = req.query
+    console.log(`continuationToken: ${continuationToken}, maxKeys: ${maxKeys}`)
+    const result = await getFiles(continuationToken, maxKeys)
+    res.json(result)
 })
 
 app.get('/files/:fileName', async (req, res) => {
@@ -27,7 +30,8 @@ app.get('/downloadfile/:fileName', async (req, res) => {
 })
 
 app.post('/files', async (req, res) => {
-    const result = await uploadFile(req.files.file)
+    const folderPath = req.body.folderPath || ''
+    const result = await uploadFile(req.files.file, folderPath)
     res.json({ result })
 })
 
